@@ -67,7 +67,7 @@ namespace BootstrapBlazor.WebAssembly.ClientHost
                 op.SupportedCultures.AddRange(new string[] { "zh-CN", "en-US" });
             });
 
-            builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+            builder.Services.AddLocalization();
 
             var host = builder.Build();
 
@@ -76,14 +76,20 @@ namespace BootstrapBlazor.WebAssembly.ClientHost
             await host.RunAsync();
         }
 
-        // based on https://github.com/pranavkm/LocSample
         private static async Task SetCultureAsync(WebAssemblyHost host)
         {
+            // 如果 localStorage 未设置语言使用浏览器请求语言
             var jsRuntime = host.Services.GetRequiredService<IJSRuntime>();
-            var cultureName = await jsRuntime.InvokeAsync<string>("$.blazorCulture.get") ?? "zh";
-            var culture = new CultureInfo(cultureName);
-            CultureInfo.DefaultThreadCurrentCulture = culture;
-            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            var cultureName = await jsRuntime.InvokeAsync<string>("$.blazorCulture.get");
+
+            if (!string.IsNullOrEmpty(cultureName))
+            {
+                var culture = new CultureInfo(cultureName);
+
+                // 注意 wasm 模式此处必须使用 DefaultThreadCurrentCulture 不可以使用 CurrentCulture
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+            }
         }
 
         internal class DefaultCultureStorage : ICultureStorage
