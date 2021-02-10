@@ -22,12 +22,35 @@ namespace BootstrapBlazor.DataAcces.PetaPoco
         /// </summary>
         /// <typeparam name="TModel"></typeparam>
         /// <returns></returns>
-        public static Task<List<TModel>> FetchAsync<TModel>(this IDatabase db, IEnumerable<IFilterAction> where)
+        public static Task<List<TModel>> FetchAsync<TModel>(this IDatabase db, IEnumerable<IFilterAction> where, string? sortName = null, SortOrder sortOrder = SortOrder.Unset)
         {
             var exp = where.GetFilterLambda<TModel>();
             var sql = new Sql();
             AnalysisExpression(exp, db, sql);
+
+            if (!string.IsNullOrEmpty(sortName) && sortOrder != SortOrder.Unset)
+            {
+                sql.OrderBy(sortOrder == SortOrder.Asc ? sortName : $"{sortName} desc");
+            }
             return db.FetchAsync<TModel>(sql);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <returns></returns>
+        public static Task<Page<TModel>> PageAsync<TModel>(this IDatabase db, long pageIndex, long pageItems, IEnumerable<IFilterAction> where, string? sortName = null, SortOrder sortOrder = SortOrder.Unset)
+        {
+            var exp = where.GetFilterLambda<TModel>();
+            var sql = new Sql();
+            AnalysisExpression(exp, db, sql);
+
+            if (!string.IsNullOrEmpty(sortName) && sortOrder != SortOrder.Unset)
+            {
+                sql.OrderBy(sortOrder == SortOrder.Asc ? sortName : $"{sortName} desc");
+            }
+            return db.PageAsync<TModel>(pageIndex, pageItems, sql);
         }
 
         private static void AnalysisExpression(Expression expression, IDatabase db, Sql sql)
